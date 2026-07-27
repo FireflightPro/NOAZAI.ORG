@@ -1,2 +1,2 @@
 # NOAZAI.ORG
-Website for the Northern Arizona AI meetups
+Website for the Northern Arizona AI meetup
