@@ -1,0 +1,86 @@
+# Checks the site on every push and pull request; deploys to GitHub Pages
+# (noazai.org) only from main, and only when the checks pass.
+name: Check and deploy site
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main"]
+  # Run manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Copy only the files that belong on the website into _site, so the
+      # checks run on exactly what gets published (no README, .claude/, etc.)
+      - name: Assemble site files
+        run: |
+          rsync -a ./ _site/ \
+            --exclude '.git' --exclude '.github' --exclude '.claude' --exclude '.idea' \
+            --exclude '.gitignore' --exclude '.DS_Store' --exclude '_site' \
+            --exclude 'node_modules' --exclude 'README.md' \
+            --exclude 'package.json' --exclude 'package-lock.json'
+          echo "Files to publish:" && find _site -type f | sort
+
+      # W3C Nu HTML Checker — the same engine as validator.w3.org
+      - name: Download W3C validator
+        run: |
+          curl -sSfL -o vnu.zip https://github.com/validator/validator/releases/download/latest/vnu.linux.zip
+          unzip -q vnu.zip -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/vnu-runtime-image/bin" >> "$GITHUB_PATH"
+
+      - name: Validate HTML
+        run: vnu --skip-non-html --format gnu _site
+
+      - name: Validate CSS
+        run: vnu --skip-non-css --format gnu _site
+
+      # Internal links, anchors (#events etc.) and image/CSS/JS paths: must pass
+      - name: Check internal links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --include-fragments --root-dir "${{ github.workspace }}/_site" "_site/**/*.html"
+          jobSummary: true
+
+      # External sites can be briefly down, so this reports but never blocks
+      - name: Check external links (warning only)
+        uses: lycheeverse/lychee-action@v2
+        continue-on-error: true
+        with:
+          args: --scheme https --scheme http --max-retries 3 "_site/**/*.html"
+          fail: true
+          jobSummary: true
+
+      - name: Upload site for deployment
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # One deployment at a time; never cancel one that's in progress
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
