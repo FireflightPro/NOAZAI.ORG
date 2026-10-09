@@ -18,7 +18,12 @@
       <a href="#top" class="nav-brand">
         <img src="media/images/png/naai-logo.png" alt="NAAI logo" class="nav-logo">
       </a>
-      <ul class="nav-links">
+      <button type="button" class="nav-toggle" aria-controls="nav-links" aria-expanded="false" aria-label="Open menu">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
         <li><a href="#top" class="is-active">Home</a></li>
         <li><a href="#events">Events</a></li>
         <li><a href="#about">About</a></li>
@@ -169,6 +174,7 @@
     <span>Designed &amp; sponsored by <a href="https://fireflight.ai">FireFlight</a></span>
   </footer>
 
+  <script src="js/nav.js"></script>
   <script src="js/contact-form.js"></script>
 </body>
 </html>
