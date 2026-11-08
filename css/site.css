@@ -309,6 +309,9 @@ ul { list-style: none; margin: 0; padding: 0; }
   color: var(--color-navy-400);
   margin: 0 0 16px;
 }
+p.event-desc-featured {
+  margin: 10px 0 0;
+}
 .event-tags {
   display: flex;
   gap: 10px;
